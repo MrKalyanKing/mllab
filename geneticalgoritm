@@ -1,0 +1,80 @@
+import random
+
+# Genetic Algorithm Parameters
+POPULATION_SIZE = 100
+GENES = '''abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890, .-;:_!"#%&/()=?@${[]}'''
+TARGET = "I love GeeksforGeeks"
+
+class Individual:
+    """Represents a candidate solution (individual) in the population"""
+    def __init__(self, chromosome):
+        self.chromosome = chromosome  # The candidate string
+        self.fitness = self.calculate_fitness()  # Fitness score
+
+    @classmethod
+    def mutated_gene(cls):
+        """Generate a random character from the GENES pool"""
+        return random.choice(GENES)
+
+    @classmethod
+    def create_gnome(cls):
+        """Create initial random string (chromosome)"""
+        return [cls.mutated_gene() for _ in range(len(TARGET))]
+
+    def mate(self, partner):
+        """Crossover between two parents to produce offspring"""
+        child_chromosome = []
+        for p1, p2 in zip(self.chromosome, partner.chromosome):
+            prob = random.random()
+            if prob < 0.45:    # Take gene from parent 1
+                child_chromosome.append(p1)
+            elif prob < 0.90:  # Take gene from parent 2
+                child_chromosome.append(p2)
+            else:              # Mutate (random new gene)
+                child_chromosome.append(self.mutated_gene())
+        return Individual(child_chromosome)
+
+    def calculate_fitness(self):
+        """Measure how close the candidate is to the target (lower is better)"""
+        return sum(1 for c, t in zip(self.chromosome, TARGET) if c != t)
+
+def main():
+    # Initialize population
+    population = [Individual(Individual.create_gnome()) for _ in range(POPULATION_SIZE)]
+    generation = 1
+    found = False
+
+    while not found:
+        # Sort by fitness (ascending order)
+        population = sorted(population, key=lambda x: x.fitness)
+
+        # Check for solution
+        if population[0].fitness <= 0:
+            found = True
+            break
+
+        # Create new generation
+        new_generation = []
+
+        # Elitism: Keep top 10% of current generation
+        elite_size = int(0.1 * POPULATION_SIZE)
+        new_generation.extend(population[:elite_size])
+
+        # Mate top 50% individuals to produce remaining 90%
+        for _ in range(POPULATION_SIZE - elite_size):
+            parent1 = random.choice(population[:50])
+            parent2 = random.choice(population[:50])
+            new_generation.append(parent1.mate(parent2))
+
+        population = new_generation
+
+        # Display progress
+        current_best = "".join(population[0].chromosome)
+        print(f"Generation {generation}\tString: {current_best}\tFitness: {population[0].fitness}")
+        generation += 1
+
+    # Final result
+    print(f"\nFound in generation {generation}: {''.join(population[0].chromosome)}")
+
+if __name__ == "__main__":
+    main()
